@@ -23,6 +23,8 @@ namespace Grocery.App.ViewModels
         GroceryList groceryList = new(0, "None", DateOnly.MinValue, "", 0);
         [ObservableProperty]
         string myMessage;
+        [ObservableProperty]
+        string noProductMessage;
 
         public GroceryListItemsViewModel(IGroceryListItemsService groceryListItemsService, IProductService productService, IFileSaverService fileSaverService)
         {
@@ -39,13 +41,24 @@ namespace Grocery.App.ViewModels
             GetAvailableProducts();
         }
 
-        private void GetAvailableProducts()
+        private void GetAvailableProducts(string? productSearch = null)
         {
             AvailableProducts.Clear();
             foreach (Product p in _productService.GetAll())
-                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null  && p.Stock > 0)
+                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null && p.Stock > 0 && (productSearch == null || p.Name.ToLower().Contains(productSearch.ToLower())))
                     AvailableProducts.Add(p);
+
+            if (productSearch == null || productSearch == "")
+            {
+                NoProductMessage = "Geen producten beschikbaar";
+            }
+            else
+            {
+                NoProductMessage = $"Geen producten gevonden voor '{productSearch}'";
+            }
         }
+
+        
 
         partial void OnGroceryListChanged(GroceryList value)
         {
@@ -84,6 +97,12 @@ namespace Grocery.App.ViewModels
             {
                 await Toast.Make($"Opslaan mislukt: {ex.Message}").Show(cancellationToken);
             }
+        }
+        [RelayCommand]
+        public void SearchProducts(string productName)
+        {
+            
+            GetAvailableProducts(productName);
         }
 
     }
